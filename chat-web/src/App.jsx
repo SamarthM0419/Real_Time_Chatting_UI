@@ -3,8 +3,9 @@ function App() {
     <>
       <h1>Hello World</h1>
       <h1 className="text-3xl font-bold text-blue-500">
-        Tailwind Working 🚀
+        Tailwind Working 
       </h1>
+      <button className="btn btn-primary 2px">DaisyUI Working</button>
     </>
   );
 }
