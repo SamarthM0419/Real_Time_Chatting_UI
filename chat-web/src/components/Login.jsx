@@ -1,9 +1,14 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addUser } from "../utils/userSlice";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [emaidId, setEmailId] = useState("samarth2534@gmail.com");
+  const [emailId, setEmailId] = useState("samarth2534@gmail.com");
   const [password, setPassword] = useState("Samarth@123");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
@@ -15,6 +20,8 @@ const Login = () => {
         },
         { withCredentials: true },
       );
+      dispatch(addUser(res.data));
+      return navigate("/");
     } catch (err) {
       console.error(err);
     }
@@ -38,10 +45,10 @@ const Login = () => {
             </label>
             <input
               type="text"
-              value={emaidId}
+              value={emailId}
               placeholder="Enter your username"
               className="input input-bordered bg-base-200/60 focus:border-primary focus:outline-none"
-              onChange={() => setEmailId(emaidId.target.value)}
+              onChange={() => setEmailId(emailId.target.value)}
             />
           </div>
 
@@ -54,7 +61,7 @@ const Login = () => {
               value={password}
               placeholder="Enter your password"
               className="input input-bordered bg-base-200/60 focus:border-primary focus:outline-none"
-              onChange={() => setPassword(emaidId.target.value)}
+              onChange={() => setPassword(password.target.value)}
             />
           </div>
 
