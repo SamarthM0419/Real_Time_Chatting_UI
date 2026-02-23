@@ -5,6 +5,7 @@ import Profile from "./components/Profile";
 import { Provider } from "react-redux";
 import appStore from "./utils/appStore";
 import Friends from "./components/Friends";
+import ErrorPage from "./components/ErrorPage";
 
 function App() {
   return (
@@ -13,10 +14,12 @@ function App() {
         <BrowserRouter baseName="/">
           <Routes>
             <Route path="/" element={<Body />}>
-              <Route path="/" element={<Friends/>}/>
+              <Route path="/" element={<Friends />} />
               <Route path="/login" element={<Login />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="*" element={<ErrorPage code={404} />} />
             </Route>
+            <Route path="*" element={<ErrorPage code={404} />} />
           </Routes>
         </BrowserRouter>
       </Provider>
