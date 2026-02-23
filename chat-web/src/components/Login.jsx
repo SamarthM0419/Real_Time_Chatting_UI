@@ -65,7 +65,7 @@ const Login = () => {
               onChange={() => setPassword(password.target.value)}
             />
           </div>
-
+          <p className="text-red-600">Error Message</p>
           <div className="pt-2">
             <button
               className="btn btn-primary w-full text-base font-semibold tracking-wide hover:scale-[1.02] transition-all duration-300"
