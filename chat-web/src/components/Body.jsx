@@ -15,16 +15,14 @@ const Body = () => {
   const fetchUser = async () => {
     if (userData) return;
     try {
-      const res = await axios.get(BASE_URL + "profile/profile", {
+      const res = await axios.get(BASE_URL + "/profile/getProfile", {
         withCredentials: true,
       });
       dispatch(addUser(res.data));
     } catch (err) {
-      if (err.status == 401) {
-        navigate("/login");
+      if (err?.response?.status === 401) {
+        navigate("/error", { state: { code: 401 } });
       }
-      //create a error page
-      console.error(err);
     }
   };
 
