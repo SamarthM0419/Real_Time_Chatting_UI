@@ -1,6 +1,7 @@
-import React from "react";
+
+import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import { removeUser } from "../utils/userSlice";
 
@@ -11,24 +12,27 @@ const NavBar = () => {
 
   const handleLogout = async () => {
     try {
-      const res = await axios.post(
+      await axios.post(
         BASE_URL + "/auth/logout",
         {},
-        { withCredentials: true },
+        { withCredentials: true }
       );
       dispatch(removeUser());
-      return navigate("/login");
-    } catch {}
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed", err); 
+    }
   };
 
   return (
     <div className="navbar bg-base-200 shadow-md px-6">
-      <div className="flex-1 ">
+      <div className="flex-1">
         <Link to="/" className="btn btn-ghost text-xl font-bold">
           💬 <span className="text-primary">Ping</span> Talk
         </Link>
       </div>
-      {user && (
+
+      {user?.photoUrl && (
         <div className="flex gap-2">
           <div className="dropdown dropdown-end mx-5 flex">
             <div
@@ -40,8 +44,9 @@ const NavBar = () => {
                 <img alt="user photo" src={user.photoUrl} />
               </div>
             </div>
+
             <ul
-              tabIndex="-1"
+              tabIndex={-1} 
               className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
             >
               <li>

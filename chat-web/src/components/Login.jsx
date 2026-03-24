@@ -24,7 +24,7 @@ const Login = () => {
         { withCredentials: true },
       );
       dispatch(addUser(res.data));
-      return navigate("/");
+      return navigate("/friends");
     } catch (err) {
       setError(err?.response?.data || "Something went wrong");
     }
@@ -115,7 +115,7 @@ const Login = () => {
               </span>
             </label>
             <input
-              type="text"
+              type="email"
               value={emailId}
               placeholder="Enter your email"
               className={`input input-bordered bg-base-200/60 focus:outline-none

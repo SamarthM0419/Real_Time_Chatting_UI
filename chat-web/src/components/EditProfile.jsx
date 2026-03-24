@@ -4,6 +4,7 @@ import { BASE_URL } from "../utils/constants";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
 import PreviewCard from "./PreviewCard";
+import { useNavigate } from "react-router-dom";
 
 const EditProfile = ({ user }) => {
   const [firstName,  setFirstName]  = useState(user.firstName  || "");
@@ -15,6 +16,7 @@ const EditProfile = ({ user }) => {
   const [error,      setError]      = useState("");
   const [showToast,  setShowToast]  = useState(false);
   const [loading,    setLoading]    = useState(false);
+  const navigate = useNavigate();
 
   const dispatch = useDispatch();
 
@@ -22,14 +24,15 @@ const EditProfile = ({ user }) => {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.patch(
-        BASE_URL + "/patchProfile",
+      const res = await axios.put(
+        BASE_URL + "profile/patchProfile",
         { firstName, lastName, profilePic, age, gender, about },
         { withCredentials: true }
       );
       dispatch(addUser(res?.data?.data)); 
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
+      navigate("/friends")
     }catch (err) {
       const status = err?.response?.status;
       if ([401, 403, 404, 500].includes(status)) {
@@ -43,11 +46,11 @@ const EditProfile = ({ user }) => {
   };
 
   const fields = [
-    { label: "First Name", value: firstName,  setter: setFirstName,  placeholder: "John",                  type: "text"   },
-    { label: "Last Name",  value: lastName,   setter: setLastName,   placeholder: "Doe",                   type: "text"   },
-    { label: "Photo URL",  value: profilePic, setter: setProfilePic, placeholder: "https://...",           type: "text"   },
-    { label: "Age",        value: age,        setter: setAge,        placeholder: "25",                    type: "number" },
-    { label: "Gender",     value: gender,     setter: setGender,     placeholder: "Male / Female / Other", type: "text"   },
+    { label: "First Name:", value: firstName,  setter: setFirstName,  placeholder: "Enter firstName",                  type: "text"   },
+    { label: "Last Name:",  value: lastName,   setter: setLastName,   placeholder: "Enter lastName",                   type: "text"   },
+    { label: "Photo URL:",  value: profilePic, setter: setProfilePic, placeholder: "Enter photoUrl",           type: "text"   },
+    { label: "Age:",        value: age,        setter: setAge,        placeholder: "Enter age",                    type: "number" },
+    { label: "Gender:",     value: gender,     setter: setGender,     placeholder: "Enter gender", type: "text"   },
   ];
 
   return (
