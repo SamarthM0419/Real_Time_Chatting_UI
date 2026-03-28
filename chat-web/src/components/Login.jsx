@@ -19,7 +19,7 @@ const Login = () => {
   const handleLogin = async () => {
     try {
       const res = await axios.post(
-        BASE_URL + "auth/login",
+        BASE_URL + "login",
         { emailId, password },
         { withCredentials: true },
       );
@@ -33,7 +33,7 @@ const Login = () => {
   const handleSignup = async () => {
     try {
       const res = await axios.post(
-        BASE_URL + "auth/signup",
+        BASE_URL + "signup",
         { firstName, lastName, emailId, password },
         { withCredentials: true },
       );
