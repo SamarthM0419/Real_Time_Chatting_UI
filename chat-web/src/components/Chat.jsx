@@ -34,8 +34,19 @@ const groupByDate = (messages) => {
   return groups;
 };
 
-const Avatar = ({ name, size = "w-8 h-8", group = false }) => {
+const Avatar = ({ name, photoUrl, size = "w-8 h-8", group = false }) => {
   const initials = name ? name.slice(0, 2).toUpperCase() : "?";
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name || "avatar"}
+        className={`${size} rounded-full object-cover ring-2 flex-shrink-0 ${
+          group ? "ring-secondary/20" : "ring-primary/20"
+        }`}
+      />
+    );
+  }
   return (
     <div className={`${size} rounded-full flex items-center justify-center ring-2 font-bold text-xs flex-shrink-0 ${
       group
@@ -211,7 +222,7 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
             const res = await axios.get(PROFILE_URL + "profile/" + c.peerId, { withCredentials: true });
             const p = res.data?.data;
             const name = [p?.firstName, p?.lastName].filter(Boolean).join(" ");
-            return { ...c, label: name || c.label };
+            return { ...c, label: name || c.label, photoUrl: p?.profilePic || null };
           } catch {
             return c;
           }
@@ -234,14 +245,14 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const startChat = async (peerId, label) => {
+  const startChat = async (peerId, label, photoUrl) => {
     try {
       const res = await axios.post(
         CHAT_URL + "create-direct",
         { receiverId: peerId },
         { withCredentials: true }
       );
-      onSelectChat(res.data._id, label, false);
+      onSelectChat(res.data._id, label, false, photoUrl);
       navigate(`/chat/${res.data._id}`);
     } catch (err) {
       alert(err?.response?.data?.message ?? "Could not start chat");
@@ -302,12 +313,12 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
                   return (
                     <button
                       key={c.requestId}
-                      onClick={() => startChat(c.peerId, c.label)}
+                      onClick={() => startChat(c.peerId, c.label, c.photoUrl)}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors text-left border-b border-base-200/50 ${
                         isActive ? "bg-primary/10 border-l-2 border-l-primary" : ""
                       }`}
                     >
-                      <Avatar name={c.label} size="w-9 h-9" />
+                      <Avatar name={c.label} photoUrl={c.photoUrl} size="w-9 h-9" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate text-base-content">{c.label}</p>
                       </div>
@@ -442,7 +453,7 @@ const EmptyChat = () => (
 );
 
 /* ─── Chat Window ────────────────────────────────────────────────────────── */
-const ChatWindow = ({ chatId, peerLabel, isGroup }) => {
+const ChatWindow = ({ chatId, peerLabel, peerPhoto, isGroup }) => {
   const currentUser = useSelector((s) => s.user);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -571,7 +582,7 @@ const ChatWindow = ({ chatId, peerLabel, isGroup }) => {
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="px-5 py-3 border-b border-base-300 bg-base-100/70 backdrop-blur flex items-center gap-3">
-        <Avatar name={peerLabel ?? "?"} size="w-8 h-8" group={isGroup} />
+        <Avatar name={peerLabel ?? "?"} photoUrl={isGroup ? null : peerPhoto} size="w-8 h-8" group={isGroup} />
         <div className="flex-1">
           <p className="text-sm font-semibold text-base-content">{peerLabel ?? "Chat"}</p>
           <div className="flex items-center gap-1.5">
@@ -697,12 +708,14 @@ const Chat = () => {
   const { chatId: urlChatId } = useParams();
   const [activeChatId, setActiveChatId] = useState(urlChatId ?? null);
   const [peerLabel, setPeerLabel] = useState(null);
+  const [peerPhoto, setPeerPhoto] = useState(null);
   const [isGroup, setIsGroup] = useState(false);
 
-  const handleSelectChat = (chatId, label, group) => {
+  const handleSelectChat = (chatId, label, group, photoUrl) => {
     setActiveChatId(chatId);
     setPeerLabel(label);
     setIsGroup(!!group);
+    setPeerPhoto(photoUrl ?? null);
   };
 
   useEffect(() => {
@@ -716,7 +729,7 @@ const Chat = () => {
     >
       <ChatSidebar activeChatId={activeChatId} onSelectChat={handleSelectChat} />
       {activeChatId ? (
-        <ChatWindow key={activeChatId} chatId={activeChatId} peerLabel={peerLabel} isGroup={isGroup} />
+        <ChatWindow key={activeChatId} chatId={activeChatId} peerLabel={peerLabel} peerPhoto={peerPhoto} isGroup={isGroup} />
       ) : (
         <EmptyChat />
       )}
