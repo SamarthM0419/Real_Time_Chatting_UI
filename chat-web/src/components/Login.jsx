@@ -29,7 +29,8 @@ const Login = () => {
       dispatch(addUser(profileRes.data.data));
       return navigate("/friends");
     } catch (err) {
-      setError(err?.response?.data || "Something went wrong");
+      const data = err?.response?.data;
+      setError(typeof data === "string" ? data : data?.message || "Invalid login credentials");
     }
   };
 
@@ -43,7 +44,8 @@ const Login = () => {
       dispatch(addUser(res.data.data));
       return navigate("/profile");
     } catch (err) {
-      setError(err?.response?.data || "Something went wrong");
+      const data = err?.response?.data;
+      setError(typeof data === "string" ? data : data?.message || "Something went wrong");
     }
   };
 

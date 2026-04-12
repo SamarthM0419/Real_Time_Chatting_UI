@@ -75,7 +75,6 @@ const EditProfile = ({ user }) => {
     { label: "First Name:", value: firstName, setter: setFirstName, placeholder: "Enter firstName", type: "text"   },
     { label: "Last Name:",  value: lastName,  setter: setLastName,  placeholder: "Enter lastName",  type: "text"   },
     { label: "Age:",        value: age,       setter: setAge,       placeholder: "Enter age",        type: "number" },
-    { label: "Gender:",     value: gender,    setter: setGender,    placeholder: "Enter gender",     type: "text"   },
   ];
 
   return (
@@ -147,6 +146,22 @@ const EditProfile = ({ user }) => {
                 />
               </div>
             ))}
+
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-base-content/80 text-xs">Gender:</span>
+              </label>
+              <select
+                value={gender}
+                className="select select-bordered select-sm bg-base-200/60 focus:border-primary focus:outline-none w-full"
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="" disabled>Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
 
             <div className="form-control">
               <label className="label py-1">
