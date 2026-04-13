@@ -34,8 +34,19 @@ const groupByDate = (messages) => {
   return groups;
 };
 
-const Avatar = ({ name, size = "w-8 h-8", group = false }) => {
+const Avatar = ({ name, photoUrl, size = "w-8 h-8", group = false }) => {
   const initials = name ? name.slice(0, 2).toUpperCase() : "?";
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name || "avatar"}
+        className={`${size} rounded-full object-cover ring-2 flex-shrink-0 ${
+          group ? "ring-secondary/20" : "ring-primary/20"
+        }`}
+      />
+    );
+  }
   return (
     <div className={`${size} rounded-full flex items-center justify-center ring-2 font-bold text-xs flex-shrink-0 ${
       group
@@ -144,6 +155,74 @@ const CreateGroupModal = ({ connections, onClose, onCreate }) => {
   );
 };
 
+/* ─── Group Members Modal ────────────────────────────────────────────────── */
+const GroupMembersModal = ({ participants, myId, onClose }) => {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const ids = participants
+      .map((p) => (typeof p === "string" ? p : (p?._id ?? p?.userId ?? p?.id)?.toString()))
+      .filter(Boolean);
+
+    Promise.all(
+      ids.map(async (id) => {
+        try {
+          const res = await axios.get(PROFILE_URL + "profile/" + id, { withCredentials: true });
+          const p = res.data?.data;
+          const name = [p?.firstName, p?.lastName].filter(Boolean).join(" ") || `User …${id.slice(-6)}`;
+          return { id, name, photoUrl: p?.profilePic || null, isMe: id === myId };
+        } catch {
+          return { id, name: `User …${id.slice(-6)}`, photoUrl: null, isMe: id === myId };
+        }
+      })
+    ).then((resolved) => {
+      resolved.sort((a, b) => {
+        if (a.isMe) return -1;
+        if (b.isMe) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      setMembers(resolved);
+      setLoading(false);
+    });
+  }, [participants, myId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm mx-4 border border-base-300">
+        <div className="px-5 py-4 border-b border-base-300 flex items-center justify-between">
+          <h3 className="font-bold text-base text-secondary">
+            Members · {participants.length}
+          </h3>
+          <button onClick={onClose} className="btn btn-ghost btn-xs btn-circle">✕</button>
+        </div>
+        <div className="p-4 max-h-96 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <span className="loading loading-spinner loading-sm text-secondary" />
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {members.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <Avatar name={m.name} photoUrl={m.photoUrl} size="w-9 h-9" group />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate text-base-content">{m.name}</p>
+                    {m.isMe && <p className="text-[10px] text-secondary font-semibold">You</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ─── Chat Sidebar ───────────────────────────────────────────────────────── */
 const ChatSidebar = ({ activeChatId, onSelectChat }) => {
   const [connections, setConnections] = useState([]);
@@ -211,7 +290,7 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
             const res = await axios.get(PROFILE_URL + "profile/" + c.peerId, { withCredentials: true });
             const p = res.data?.data;
             const name = [p?.firstName, p?.lastName].filter(Boolean).join(" ");
-            return { ...c, label: name || c.label };
+            return { ...c, label: name || c.label, photoUrl: p?.profilePic || null };
           } catch {
             return c;
           }
@@ -234,14 +313,14 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const startChat = async (peerId, label) => {
+  const startChat = async (peerId, label, photoUrl) => {
     try {
       const res = await axios.post(
         CHAT_URL + "create-direct",
         { receiverId: peerId },
         { withCredentials: true }
       );
-      onSelectChat(res.data._id, label, false);
+      onSelectChat(res.data._id, label, false, photoUrl);
       navigate(`/chat/${res.data._id}`);
     } catch (err) {
       alert(err?.response?.data?.message ?? "Could not start chat");
@@ -249,13 +328,13 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
   };
 
   const openGroup = (group) => {
-    onSelectChat(group._id, group.name, true);
+    onSelectChat(group._id, group.name, true, null, group.participants ?? []);
     navigate(`/chat/${group._id}`);
   };
 
   const handleGroupCreated = (newGroup) => {
     setGroups((prev) => [newGroup, ...prev]);
-    onSelectChat(newGroup._id, newGroup.name, true);
+    onSelectChat(newGroup._id, newGroup.name, true, null, newGroup.participants ?? []);
     navigate(`/chat/${newGroup._id}`);
   };
 
@@ -302,12 +381,12 @@ const ChatSidebar = ({ activeChatId, onSelectChat }) => {
                   return (
                     <button
                       key={c.requestId}
-                      onClick={() => startChat(c.peerId, c.label)}
+                      onClick={() => startChat(c.peerId, c.label, c.photoUrl)}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors text-left border-b border-base-200/50 ${
                         isActive ? "bg-primary/10 border-l-2 border-l-primary" : ""
                       }`}
                     >
-                      <Avatar name={c.label} size="w-9 h-9" />
+                      <Avatar name={c.label} photoUrl={c.photoUrl} size="w-9 h-9" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate text-base-content">{c.label}</p>
                       </div>
@@ -442,7 +521,7 @@ const EmptyChat = () => (
 );
 
 /* ─── Chat Window ────────────────────────────────────────────────────────── */
-const ChatWindow = ({ chatId, peerLabel, isGroup }) => {
+const ChatWindow = ({ chatId, peerLabel, peerPhoto, isGroup, groupParticipants = [] }) => {
   const currentUser = useSelector((s) => s.user);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -450,6 +529,7 @@ const ChatWindow = ({ chatId, peerLabel, isGroup }) => {
   const [senderNames, setSenderNames] = useState({});
   const [pendingFile, setPendingFile] = useState(null);
   const [sending, setSending] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const socketRef = useRef(null);
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -569,9 +649,17 @@ const ChatWindow = ({ chatId, peerLabel, isGroup }) => {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
+      {showMembers && (
+        <GroupMembersModal
+          participants={groupParticipants}
+          myId={myId}
+          onClose={() => setShowMembers(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="px-5 py-3 border-b border-base-300 bg-base-100/70 backdrop-blur flex items-center gap-3">
-        <Avatar name={peerLabel ?? "?"} size="w-8 h-8" group={isGroup} />
+        <Avatar name={peerLabel ?? "?"} photoUrl={isGroup ? null : peerPhoto} size="w-8 h-8" group={isGroup} />
         <div className="flex-1">
           <p className="text-sm font-semibold text-base-content">{peerLabel ?? "Chat"}</p>
           <div className="flex items-center gap-1.5">
@@ -581,6 +669,20 @@ const ChatWindow = ({ chatId, peerLabel, isGroup }) => {
             </span>
           </div>
         </div>
+        {isGroup && (
+          <button
+            onClick={() => setShowMembers(true)}
+            className="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-secondary"
+            title="View members"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -697,12 +799,16 @@ const Chat = () => {
   const { chatId: urlChatId } = useParams();
   const [activeChatId, setActiveChatId] = useState(urlChatId ?? null);
   const [peerLabel, setPeerLabel] = useState(null);
+  const [peerPhoto, setPeerPhoto] = useState(null);
   const [isGroup, setIsGroup] = useState(false);
+  const [groupParticipants, setGroupParticipants] = useState([]);
 
-  const handleSelectChat = (chatId, label, group) => {
+  const handleSelectChat = (chatId, label, group, photoUrl, participants) => {
     setActiveChatId(chatId);
     setPeerLabel(label);
     setIsGroup(!!group);
+    setPeerPhoto(photoUrl ?? null);
+    setGroupParticipants(participants ?? []);
   };
 
   useEffect(() => {
@@ -716,7 +822,7 @@ const Chat = () => {
     >
       <ChatSidebar activeChatId={activeChatId} onSelectChat={handleSelectChat} />
       {activeChatId ? (
-        <ChatWindow key={activeChatId} chatId={activeChatId} peerLabel={peerLabel} isGroup={isGroup} />
+        <ChatWindow key={activeChatId} chatId={activeChatId} peerLabel={peerLabel} peerPhoto={peerPhoto} isGroup={isGroup} groupParticipants={groupParticipants} />
       ) : (
         <EmptyChat />
       )}
